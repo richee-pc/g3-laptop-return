@@ -37,6 +37,7 @@ function handle_(e) {
 
   if (req.action === 'list') return out_({ ok: true, rows: readAll_(), ts: new Date().toISOString() });
   if (req.action === 'update') return update_(req);
+  if (req.action === 'bulk') return bulk_(req);
   return out_({ ok: false, error: 'unknown_action' });
 }
 
@@ -102,6 +103,39 @@ function update_(req) {
     range.setValues([cur]);
     var full = sh.getRange(row, 1, 1, 13).getDisplayValues()[0];
     return out_({ ok: true, row: rowObj_(full) });
+  } finally {
+    lock.releaseLock();
+  }
+}
+
+// 여러 학생을 한 번에 반납 처리 (반 전체 일괄 체크). 노트북·어댑터·케이블·반납일만 바꿉니다.
+function bulk_(req) {
+  var ids = (req.ids || []).map(String);
+  var p = req.patch || {};
+  if (!ids.length || ids.length > 60) return out_({ ok: false, error: 'bad_value' });
+  var want = {}; ids.forEach(function (id) { want[id] = true; });
+  var lock = LockService.getScriptLock();
+  lock.waitLock(15000);
+  try {
+    var sh = sheet_();
+    var n = sh.getLastRow() - 1;
+    if (n < 1) return out_({ ok: false, error: 'not_found' });
+    var all = sh.getRange(2, 1, n, 13).getDisplayValues();
+    var stamp = Utilities.formatDate(new Date(), 'Asia/Seoul', 'MM-dd HH:mm');
+    var changed = [];
+    for (var i = 0; i < all.length; i++) {
+      if (!want[all[i][0]]) continue;
+      var r = all[i];
+      ['nb', 'ad', 'cb'].forEach(function (k) { if (k in p) r[COL[k] - 1] = p[k] ? '○' : ''; });
+      if ('returnedAt' in p && !r[COL.returnedAt - 1]) r[COL.returnedAt - 1] = String(p.returnedAt || '').slice(0, 10);
+      r[COL.updatedAt - 1] = stamp;
+      changed.push(i);
+    }
+    if (!changed.length) return out_({ ok: false, error: 'not_found' });
+    var block = sh.getRange(2, COL.nb, n, 7); // G:M
+    block.setNumberFormat('@');
+    block.setValues(all.map(function (r) { return r.slice(COL.nb - 1, 13); }));
+    return out_({ ok: true, rows: changed.map(function (i) { return rowObj_(all[i]); }) });
   } finally {
     lock.releaseLock();
   }
