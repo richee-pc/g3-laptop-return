@@ -13,6 +13,9 @@
 
   function $(id) { return document.getElementById(id); }
   function ls(k, v) { try { if (v === undefined) return localStorage.getItem(k); if (v === null) localStorage.removeItem(k); else localStorage.setItem(k, v); } catch (e) { return null; } }
+  // 비밀번호는 브라우저를 닫으면 지워지는 sessionStorage 에만 둡니다 (공용 PC 대비).
+  function ss(k, v) { try { if (v === undefined) return sessionStorage.getItem(k); if (v === null) sessionStorage.removeItem(k); else sessionStorage.setItem(k, v); } catch (e) { return null; } }
+  function norm(r) { if (!r.rent) r.rent = "대여"; return r; } // 모든 학생이 배부받은 상태가 기본값
   function esc(s) { return String(s == null ? "" : s).replace(/[&<>"]/g, function (c) { return { "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;" }[c]; }); }
   function status(t, err) { var s = $("status"); s.textContent = t || ""; s.className = "status" + (err ? " err" : ""); s.hidden = !t; }
   function today() { var d = new Date(); return (d.getMonth() + 1) + "/" + d.getDate(); }
@@ -85,7 +88,7 @@
   function renderList() {
     var list = byClass(cls), s = stats(list);
     $("clsTitle").textContent = "3학년 " + cls + "반";
-    $("clsMeta").textContent = "재적 " + s.n + "명 · 대여 " + s.rent + " · 완전 반납 " + s.done + " · 미반납 " + s.pending + " · 확인필요·미입력 " + s.unknown;
+    $("clsMeta").textContent = "재적 " + s.n + "명 · 대여 " + s.rent + " · 완전 반납 " + s.done + " · 미반납 " + s.pending + " · 확인필요 " + s.unknown;
     var shown = list.filter(function (r) { return filter === "all" || stateOf(r) === filter; });
     var a = document.activeElement, keep = (a && a.dataset && a.dataset.act === "memo") ? { id: a.id, v: a.value, s: a.selectionStart } : null;
     $("list").innerHTML = shown.length ? shown.map(rowHtml).join("") : '<li class="empty">이 조건에 해당하는 학생이 없습니다.</li>';
@@ -100,7 +103,7 @@
     if (pending) return Promise.resolve(); // 저장 중에는 화면을 덮어쓰지 않음
     return api({ action: "list" }).then(function (j) {
       if (pending) return;
-      rows = new Map(j.rows.map(function (r) { return [r.id, r]; }));
+      rows = new Map(j.rows.map(function (r) { return [r.id, norm(r)]; }));
       lastSync = new Date();
       $("login").hidden = true; $("main").hidden = false; status("");
       renderAll();
@@ -118,7 +121,7 @@
     Object.assign(r, patch); renderAll();
     pending++;
     queue = queue.then(function () {
-      return api({ action: "update", id: id, patch: patch }).then(function (j) { rows.set(id, j.row); })
+      return api({ action: "update", id: id, patch: patch }).then(function (j) { rows.set(id, norm(j.row)); })
         .catch(function (e) { status("저장하지 못했습니다. (원인: " + ((e && (e.message || e.error)) || e) + ")", true); });
     }).then(function () { pending--; if (!pending) { lastSync = new Date(); renderAll(); } });
   }
@@ -131,7 +134,7 @@
   }
   function logout(msg) {
     if (timer) clearInterval(timer);
-    key = ""; ls(KEY_STORE, null); rows = new Map();
+    key = ""; ss(KEY_STORE, null); ls(KEY_STORE, null); rows = new Map();
     $("main").hidden = true; $("login").hidden = false; status("");
     var m = $("loginMsg"); if (msg) { m.textContent = msg; m.className = "hint err"; }
     $("pass").value = ""; $("pass").focus();
@@ -140,7 +143,7 @@
   // 이벤트
   $("login").addEventListener("submit", function (e) {
     e.preventDefault(); key = $("pass").value.trim(); if (!key) return;
-    ls(KEY_STORE, key); start();
+    ss(KEY_STORE, key); start();
   });
   $("logout").addEventListener("click", function () { logout(); });
   document.addEventListener("visibilitychange", function () { if (!document.hidden && key) load(false); });
@@ -150,7 +153,8 @@
     if (t.dataset.f) { filter = t.dataset.f; renderAll(); return; }
     var row = t.closest("li.row"); if (!row) return; var id = row.dataset.id, r = rows.get(id);
     if (t.dataset.act === "rent") {
-      var v = r.rent === t.dataset.v ? "" : t.dataset.v, patch = { rent: v };
+      var v = t.dataset.v; if (r.rent === v) return;
+      var patch = { rent: v };
       if (v !== "대여") { patch.nb = false; patch.ad = false; patch.cb = false; patch.returnedAt = ""; }
       save(id, patch);
     } else if (t.dataset.act === "item") {
@@ -177,9 +181,39 @@
     setTimeout(function () { URL.revokeObjectURL(a.href); }, 1000);
   });
 
+  // 업체 회수 확인서 인쇄: 1쪽 반별 수량 요약 + 서명란, 이어서 반마다 1쪽 상세
+  function O(b) { return b ? "○" : ""; }
+  function buildPrint() {
+    var d = new Date(), ds = d.getFullYear() + ". " + (d.getMonth() + 1) + ". " + d.getDate() + ".";
+    var T = { rent: 0, nb: 0, ad: 0, cb: 0, done: 0 }, sumRows = "", pages = "";
+    for (var c = 1; c <= NCLS; c++) {
+      var list = byClass(c), rent = list.filter(function (r) { return r.rent === "대여"; });
+      var k = { rent: rent.length, nb: 0, ad: 0, cb: 0, done: 0 };
+      rent.forEach(function (r) { if (r.nb) k.nb++; if (r.ad) k.ad++; if (r.cb) k.cb++; if (r.nb && r.ad && r.cb) k.done++; });
+      for (var x in T) T[x] += k[x];
+      sumRows += "<tr><td>" + c + "반</td><td>" + k.rent + "</td><td>" + k.nb + "</td><td>" + k.ad + "</td><td>" + k.cb + "</td><td>" + k.done + "</td><td>" + (k.rent - k.done) + "</td></tr>";
+      var others = list.filter(function (r) { return r.rent !== "대여"; });
+      pages += '<section class="pp"><h2>3학년 ' + c + '반 회수 내역</h2><p class="pm">대여 ' + k.rent + '대 · 3종 완전 회수 ' + k.done + '대 · 미회수 ' + (k.rent - k.done) + '대 · 출력일 ' + ds + '</p>' +
+        '<table><thead><tr><th>번호</th><th>학번</th><th>성명</th><th>노트북</th><th>어댑터</th><th>케이블</th><th>기기 상태</th><th>메모</th></tr></thead><tbody>' +
+        rent.map(function (r) { return '<tr class="' + (r.nb && r.ad && r.cb ? "" : "miss") + '"><td>' + r.no + "</td><td>" + esc(r.id) + "</td><td>" + esc(r.name) + "</td><td>" + O(r.nb) + "</td><td>" + O(r.ad) + "</td><td>" + O(r.cb) + "</td><td>" + esc(r.cond) + "</td><td class=\"l\">" + esc(r.memo) + "</td></tr>"; }).join("") +
+        "</tbody></table>" + (others.length ? '<p class="pm">대여 아님(' + others.length + '명): ' + others.map(function (r) { return esc(r.name) + "(" + esc(r.rent) + ")"; }).join(", ") + "</p>" : "") + "</section>";
+    }
+    var head = '<section class="pp"><h1>졸업 고3 노트북 회수 확인서</h1>' +
+      '<table class="meta"><tr><th>학교</th><td>조선대학교부속고등학교</td><th>회수일</th><td>' + ds + '</td></tr>' +
+      '<tr><th>회수 장소</th><td></td><th>필수 반납 품목</th><td>노트북 · 어댑터 · 케이블</td></tr></table>' +
+      '<table><thead><tr><th>반</th><th>대여 수량</th><th>노트북 회수</th><th>어댑터 회수</th><th>케이블 회수</th><th>3종 완전 회수</th><th>미회수</th></tr></thead><tbody>' + sumRows +
+      '<tr class="tot"><td>합계</td><td>' + T.rent + "</td><td>" + T.nb + "</td><td>" + T.ad + "</td><td>" + T.cb + "</td><td>" + T.done + "</td><td>" + (T.rent - T.done) + "</td></tr></tbody></table>" +
+      '<p class="pm">위 수량의 노트북(어댑터·케이블 포함)을 인계·인수하였음을 확인합니다.</p>' +
+      '<table class="sign"><tr><th>학교 담당자</th><td>소속/직급:</td><td>성명:</td><td>(서명)</td></tr>' +
+      '<tr><th>회수 업체 담당자</th><td>업체명:</td><td>성명:</td><td>(서명)</td></tr></table></section>';
+    $("print").innerHTML = head + pages;
+  }
+  $("printBtn").addEventListener("click", function () { buildPrint(); window.print(); });
+
   // 시작
   var c0 = +ls(CLS_STORE); if (c0 >= 1 && c0 <= NCLS) cls = c0;
   if (!API) { status("아직 저장소(Apps Script) 주소가 연결되지 않았습니다. config.js 의 API_URL 을 설정해 주세요.", true); return; }
-  key = ls(KEY_STORE) || "";
+  ls(KEY_STORE, null); // 예전 버전이 localStorage 에 남긴 비밀번호 삭제
+  key = ss(KEY_STORE) || "";
   if (key) start(); else { status(""); $("login").hidden = false; }
 })();

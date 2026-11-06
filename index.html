@@ -23,7 +23,7 @@
       <input id="pass" type="password" autocomplete="current-password" required>
       <button type="submit" class="btn primary">들어가기</button>
     </div>
-    <p class="hint" id="loginMsg">정보부에서 안내한 비밀번호를 입력하세요. 이 기기에서는 다음부터 자동으로 들어갑니다.</p>
+    <p class="hint" id="loginMsg">정보부에서 안내한 비밀번호를 입력하세요. 브라우저를 닫으면 다시 입력해야 합니다.</p>
   </form>
 
   <div class="status" id="status" role="status">명단을 불러오는 중입니다…</div>
@@ -32,13 +32,13 @@
     <section class="panel" aria-label="전체 현황">
       <div class="sumwrap">
         <table class="sum">
-          <thead><tr><th>반</th><th>재적</th><th>대여</th><th>미대여</th><th>확인필요·미입력</th><th>완전 반납</th><th>미반납</th><th>반납률</th></tr></thead>
+          <thead><tr><th>반</th><th>재적</th><th>대여</th><th>미대여</th><th>확인필요</th><th>완전 반납</th><th>미반납</th><th>반납률</th></tr></thead>
           <tbody id="sumBody"></tbody>
         </table>
       </div>
       <div class="key">
         <span>교육청 서식 「고3학생대여 노트북 수량」 = <b id="kRent">-</b>대</span>
-        <span>확인 안 된 학생 <b id="kUnknown">-</b>명</span>
+        <span>확인필요 학생 <b id="kUnknown">-</b>명</span>
         <span>완전 반납은 노트북·어댑터·케이블 3종이 모두 체크된 경우만 집계</span>
         <span id="synced"></span>
       </div>
@@ -51,9 +51,10 @@
         <div><h2 id="clsTitle">3학년 1반</h2><div class="meta" id="clsMeta"></div></div>
         <div class="filters" id="filters">
           <button type="button" data-f="all" aria-pressed="true">전체</button>
-          <button type="button" data-f="unknown" aria-pressed="false">확인필요·미입력</button>
+          <button type="button" data-f="unknown" aria-pressed="false">확인필요</button>
           <button type="button" data-f="pending" aria-pressed="false">미반납</button>
           <button type="button" data-f="done" aria-pressed="false">완전 반납</button>
+          <button type="button" class="btn" id="printBtn">업체 확인서 인쇄</button>
           <button type="button" class="btn" id="dlBtn">CSV 저장</button>
           <button type="button" class="btn" id="logout">로그아웃</button>
         </div>
@@ -62,6 +63,7 @@
     </section>
   </div>
 </div>
+<div id="print" aria-hidden="true"></div>
 <script src="config.js"></script>
 <script src="app.js"></script>
 </body>
