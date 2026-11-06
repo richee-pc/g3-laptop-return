@@ -2,7 +2,7 @@
 // 이 URL만으로는 명단을 볼 수 없고, 담임 공용 비밀번호가 있어야 합니다.
 // 이 저장소는 공개되므로 학생·교사 이름 같은 개인정보는 여기에 넣지 마세요.
 window.APP_CONFIG = {
-  API_URL: "",
+  API_URL: "https://script.google.com/macros/s/AKfycbz-Hx9IkucLKK05qMzsx1y95AZlfMlQW3J5rJVbg-SPMqcYJfK8FoVO1sQI3XP6JaIWBg/exec",
   CLASSES: 8,
   REFRESH_SECONDS: 20
 };
