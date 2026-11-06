@@ -1,0 +1,68 @@
+<!doctype html>
+<html lang="ko">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<meta name="robots" content="noindex,nofollow">
+<title>고3 노트북 회수 체크</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans+KR:wght@400;500;600;700&family=IBM+Plex+Mono:wght@500;600&display=swap">
+<link rel="stylesheet" href="style.css">
+</head>
+<body>
+<div class="wrap" id="app">
+  <header>
+    <h1>졸업 고3 노트북 회수 체크</h1>
+    <p>2026학년도 3학년 · 담임 선생님이 반별로 대여 여부와 반납 품목을 체크하면 전체 현황에 바로 합산됩니다.</p>
+    <div class="items"><span class="tag">필수 반납: 노트북</span><span class="tag">어댑터</span><span class="tag">케이블</span><span class="tag">회수 기간 11. 2. ~ 12. 31.</span></div>
+  </header>
+
+  <form class="panel login" id="login" hidden>
+    <label for="pass">담임 공용 비밀번호</label>
+    <div class="loginrow">
+      <input id="pass" type="password" autocomplete="current-password" required>
+      <button type="submit" class="btn primary">들어가기</button>
+    </div>
+    <p class="hint" id="loginMsg">정보부에서 안내한 비밀번호를 입력하세요. 이 기기에서는 다음부터 자동으로 들어갑니다.</p>
+  </form>
+
+  <div class="status" id="status" role="status">명단을 불러오는 중입니다…</div>
+
+  <div id="main" hidden>
+    <section class="panel" aria-label="전체 현황">
+      <div class="sumwrap">
+        <table class="sum">
+          <thead><tr><th>반</th><th>재적</th><th>대여</th><th>미대여</th><th>확인필요·미입력</th><th>완전 반납</th><th>미반납</th><th>반납률</th></tr></thead>
+          <tbody id="sumBody"></tbody>
+        </table>
+      </div>
+      <div class="key">
+        <span>교육청 서식 「고3학생대여 노트북 수량」 = <b id="kRent">-</b>대</span>
+        <span>확인 안 된 학생 <b id="kUnknown">-</b>명</span>
+        <span>완전 반납은 노트북·어댑터·케이블 3종이 모두 체크된 경우만 집계</span>
+        <span id="synced"></span>
+      </div>
+    </section>
+
+    <nav class="tabs" id="tabs" aria-label="반 선택"></nav>
+
+    <section class="panel" id="classPanel">
+      <div class="toolbar">
+        <div><h2 id="clsTitle">3학년 1반</h2><div class="meta" id="clsMeta"></div></div>
+        <div class="filters" id="filters">
+          <button type="button" data-f="all" aria-pressed="true">전체</button>
+          <button type="button" data-f="unknown" aria-pressed="false">확인필요·미입력</button>
+          <button type="button" data-f="pending" aria-pressed="false">미반납</button>
+          <button type="button" data-f="done" aria-pressed="false">완전 반납</button>
+          <button type="button" class="btn" id="dlBtn">CSV 저장</button>
+          <button type="button" class="btn" id="logout">로그아웃</button>
+        </div>
+      </div>
+      <ul class="list" id="list"></ul>
+    </section>
+  </div>
+</div>
+<script src="config.js"></script>
+<script src="app.js"></script>
+</body>
+</html>
