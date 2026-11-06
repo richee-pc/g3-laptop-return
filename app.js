@@ -21,7 +21,17 @@
     body.key = key;
     // text/plain 으로 보내면 Apps Script 에서 CORS 사전 요청 없이 받을 수 있습니다.
     return fetch(API, { method: "POST", headers: { "Content-Type": "text/plain;charset=utf-8" }, body: JSON.stringify(body), redirect: "follow" })
-      .then(function (r) { if (!r.ok) throw { error: "http_" + r.status }; return r.json(); })
+      .then(function (r) {
+        if (!r.ok) throw { error: "http_" + r.status, message: "HTTP " + r.status };
+        return r.text().then(function (t) {
+          try { return JSON.parse(t); }
+          catch (e) {
+            // Apps Script 가 JSON 대신 오류 페이지(HTML)를 돌려준 경우: 본문에서 오류 문구만 뽑아 보여 줌
+            var m = t.replace(/<[^>]+>/g, " ").replace(/\s+/g, " ").trim().slice(0, 160);
+            throw { error: "not_json", message: m || "응답 형식 오류" };
+          }
+        });
+      })
       .then(function (j) { if (!j.ok) throw j; return j; });
   }
 
@@ -97,7 +107,9 @@
     }).catch(function (e) {
       if (e && e.error === "wrong_passcode") { logout("비밀번호가 맞지 않습니다. 다시 입력해 주세요."); return; }
       if (e && e.error === "no_passcode") { status("Apps Script에 PASSCODE 스크립트 속성이 설정되지 않았습니다.", true); return; }
-      status(first ? "명단을 불러오지 못했습니다. 인터넷 연결을 확인한 뒤 새로고침해 주세요." : "자동 동기화에 실패했습니다. 잠시 후 다시 시도합니다.", true);
+      var detail = (e && (e.message || e.error)) || String(e);
+      status((first ? "명단을 불러오지 못했습니다." : "자동 동기화에 실패했습니다.") + " (원인: " + detail + ")", true);
+      if (first) { $("login").hidden = false; }
     });
   }
 
@@ -107,7 +119,7 @@
     pending++;
     queue = queue.then(function () {
       return api({ action: "update", id: id, patch: patch }).then(function (j) { rows.set(id, j.row); })
-        .catch(function () { status("저장하지 못했습니다. 연결을 확인하고 다시 눌러 주세요. 화면을 최신 상태로 다시 불러옵니다.", true); });
+        .catch(function (e) { status("저장하지 못했습니다. (원인: " + ((e && (e.message || e.error)) || e) + ")", true); });
     }).then(function () { pending--; if (!pending) { lastSync = new Date(); renderAll(); } });
   }
 

@@ -20,6 +20,14 @@ var RENT = ['', '대여', '미대여', '확인필요'];
 var CONDS = ['', '정상', '파손', '부품누락', '분실'];
 
 function doPost(e) {
+  try {
+    return handle_(e);
+  } catch (err) {
+    return out_({ ok: false, error: 'server_error', message: String(err && err.message || err) });
+  }
+}
+
+function handle_(e) {
   var req;
   try { req = JSON.parse(e.postData.contents); } catch (err) { return out_({ ok: false, error: 'bad_request' }); }
 
@@ -37,7 +45,17 @@ function doGet() {
 }
 
 function sheet_() {
-  return SpreadsheetApp.getActiveSpreadsheet().getSheetByName(SHEET_NAME);
+  // 시트의 「확장 프로그램 → Apps Script」에서 만든 스크립트면 바로 연결됩니다.
+  // script.google.com 에서 따로 만든 스크립트라면 스크립트 속성 SHEET_ID 에 시트 ID를 넣으세요.
+  var ss = SpreadsheetApp.getActiveSpreadsheet();
+  if (!ss) {
+    var sid = PropertiesService.getScriptProperties().getProperty('SHEET_ID');
+    if (!sid) throw new Error('시트에 연결되지 않은 스크립트입니다. 스크립트 속성 SHEET_ID 에 구글 시트 ID를 넣어 주세요.');
+    ss = SpreadsheetApp.openById(sid);
+  }
+  var sh = ss.getSheetByName(SHEET_NAME);
+  if (!sh) throw new Error('「' + SHEET_NAME + '」 탭을 찾을 수 없습니다. 시트 탭 이름을 확인해 주세요.');
+  return sh;
 }
 
 function readAll_() {
