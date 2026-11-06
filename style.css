@@ -15,6 +15,7 @@
   --accent:#5fb3cf; --accent-soft:#1d3440;
   --ok:#5cc685; --ok-soft:#173326; --warn:#e3a94a; --warn-soft:#3a2d14; --bad:#ec7a7a; --bad-soft:#3d1f1f; color-scheme:dark}
 *{box-sizing:border-box}
+[hidden]{display:none!important}
 html{-webkit-text-size-adjust:100%;text-size-adjust:100%}
 body{margin:0;background:var(--bg);color:var(--fg);font-family:var(--sans);font-size:15px;line-height:1.5;-webkit-tap-highlight-color:transparent}
 .wrap{max-width:1080px;margin:0 auto;padding-block:max(20px,env(safe-area-inset-top,0px)) max(48px,env(safe-area-inset-bottom,0px));padding-left:max(16px,env(safe-area-inset-left,0px));padding-right:max(16px,env(safe-area-inset-right,0px));display:grid;gap:16px;min-width:0}
