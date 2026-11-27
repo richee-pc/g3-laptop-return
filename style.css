@@ -45,6 +45,20 @@ table.sum{width:100%;border-collapse:collapse;font-size:.875rem}
 .key{display:flex;flex-wrap:wrap;gap:6px 16px;padding:10px 12px;font-size:.8125rem;color:var(--muted);border-top:1px solid var(--line)}
 .key b{color:var(--fg);font-family:var(--mono)}
 
+/* 노트북 반납률 강조 */
+.nbhead{padding:14px 14px 12px;border-bottom:1px solid var(--line);display:grid;gap:8px}
+.nbmain{display:flex;align-items:baseline;gap:10px;flex-wrap:wrap}
+.nblabel{font-weight:600}
+.nbmain strong{font-family:var(--mono);font-size:2rem;line-height:1;color:var(--ok);font-variant-numeric:tabular-nums}
+.nbcount{font-family:var(--mono);color:var(--muted);font-size:.875rem}
+.nbtrack{height:10px;border-radius:5px;background:var(--line);overflow:hidden}
+.nbtrack i{display:block;height:100%;width:0;background:var(--ok)}
+.nbsub{font-size:.8125rem;color:var(--muted)}
+.nbsub b{color:var(--fg);font-family:var(--mono)}
+.sum .nbc{background:color-mix(in srgb,var(--ok-soft) 45%,transparent)}
+.sum th.nbc{color:var(--ok)}
+.sum tr.total td.nbc{background:color-mix(in srgb,var(--ok-soft) 70%,var(--accent-soft))}
+
 /* 반 탭 */
 .tabs{display:flex;flex-wrap:wrap;gap:6px}
 .tabs button{font:inherit;font-weight:600;border:1px solid var(--line);background:var(--surface);color:var(--fg);padding:8px 14px;border-radius:6px;cursor:pointer;white-space:nowrap;min-height:40px}

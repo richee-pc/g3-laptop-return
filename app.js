@@ -41,24 +41,32 @@
   function isDone(r) { return !!(r.nb && r.ad && r.cb); }
   function stateOf(r) { return isDone(r) ? "done" : ((r.nb || r.ad || r.cb) ? "partial" : "none"); }
   function stats(list) {
-    var s = { n: list.length, done: 0, partial: 0, none: 0 };
-    list.forEach(function (r) { s[stateOf(r)]++; });
+    var s = { n: list.length, done: 0, partial: 0, none: 0, nb: 0 };
+    list.forEach(function (r) { s[stateOf(r)]++; if (r.nb) s.nb++; });
     return s;
   }
   function byClass(c) { return Array.from(rows.values()).filter(function (r) { return r.cls === c; }).sort(function (a, b) { return a.no - b.no; }); }
   function pctOf(s) { return s.n ? Math.round(s.done / s.n * 100) : null; }
+  function nbPct(s) { return s.n ? Math.round(s.nb / s.n * 100) : null; }
+  function pctCell(p, bar) {
+    return '<div class="pct">' + (bar ? '<div class="bar"><i style="width:' + (p || 0) + '%"></i></div>' : "") + (p === null ? "-" : p + "%") + '</div>';
+  }
 
   function renderSummary() {
-    var html = "", T = { n: 0, done: 0, partial: 0, none: 0 };
+    var html = "", T = { n: 0, done: 0, partial: 0, none: 0, nb: 0 };
     for (var c = 1; c <= NCLS; c++) {
       var s = stats(byClass(c)); for (var k in T) T[k] += s[k];
-      var p = pctOf(s);
-      html += '<tr data-c="' + c + '"><td class="l"><strong>' + c + '반</strong></td><td>' + s.n + '</td><td>' + s.done + '</td><td>' + s.partial + '</td><td>' + s.none +
-        '</td><td><div class="pct"><div class="bar"><i style="width:' + (p || 0) + '%"></i></div>' + (p === null ? "-" : p + "%") + '</div></td></tr>';
+      html += '<tr data-c="' + c + '"><td class="l"><strong>' + c + '반</strong></td><td>' + s.n + '</td><td class="nbc">' + s.nb + '</td><td class="nbc">' + pctCell(nbPct(s), true) +
+        '</td><td>' + s.done + '</td><td>' + pctCell(pctOf(s), false) + '</td></tr>';
     }
-    var tp = pctOf(T);
-    html += '<tr class="total"><td class="l">합계</td><td>' + T.n + '</td><td>' + T.done + '</td><td>' + T.partial + '</td><td>' + T.none + '</td><td>' + (tp === null ? "-" : tp + "%") + '</td></tr>';
+    html += '<tr class="total"><td class="l">합계</td><td>' + T.n + '</td><td class="nbc">' + T.nb + '</td><td class="nbc">' + pctCell(nbPct(T), false) +
+      '</td><td>' + T.done + '</td><td>' + pctCell(pctOf(T), false) + '</td></tr>';
     $("sumBody").innerHTML = html;
+    var np = nbPct(T);
+    $("nbRate").textContent = np === null ? "-" : np + "%";
+    $("nbCount").textContent = T.nb + " / " + T.n + "대";
+    $("nbBar").style.width = (np || 0) + "%";
+    $("doneRate").textContent = (pctOf(T) === null ? "-" : pctOf(T) + "%") + " (" + T.done + "명)";
     $("kRent").textContent = T.n;
     $("synced").textContent = lastSync ? ("마지막 동기화 " + lastSync.toLocaleTimeString("ko-KR", { hour: "2-digit", minute: "2-digit", second: "2-digit" })) : "";
   }
@@ -66,7 +74,7 @@
     var h = "";
     for (var c = 1; c <= NCLS; c++) {
       var s = stats(byClass(c));
-      h += '<button type="button" data-c="' + c + '" aria-pressed="' + (c === cls) + '">' + c + '반<small>' + s.done + '/' + s.n + '</small></button>';
+      h += '<button type="button" data-c="' + c + '" aria-pressed="' + (c === cls) + '">' + c + '반<small title="노트북 반납">' + s.nb + '/' + s.n + '</small></button>';
     }
     $("tabs").innerHTML = h;
     var on = $("tabs").querySelector('[aria-pressed="true"]');
@@ -87,8 +95,14 @@
   function renderList() {
     var list = byClass(cls), s = stats(list);
     $("clsTitle").textContent = "3학년 " + cls + "반";
-    $("clsMeta").textContent = "대상 " + s.n + "명 · 완전 반납 " + s.done + " · 일부 반납 " + s.partial + " · 미반납 " + s.none;
-    var shown = list.filter(function (r) { return filter === "all" || (filter === "done" ? isDone(r) : !isDone(r)); });
+    var np = nbPct(s);
+    $("clsMeta").textContent = "대상 " + s.n + "명 · 노트북 반납 " + s.nb + "대 (" + (np === null ? "-" : np + "%") + ") · 3종 완전 반납 " + s.done + " · 일부 반납 " + s.partial + " · 미반납 " + s.none;
+    var shown = list.filter(function (r) {
+      if (filter === "done") return isDone(r);
+      if (filter === "pending") return !isDone(r);
+      if (filter === "nbmiss") return !r.nb;
+      return true;
+    });
     var a = document.activeElement, keep = (a && a.dataset && a.dataset.act === "memo") ? { id: a.id, v: a.value, s: a.selectionStart } : null;
     $("list").innerHTML = shown.length ? shown.map(rowHtml).join("") : '<li class="empty">이 조건에 해당하는 학생이 없습니다.</li>';
     if (keep) { var el = $(keep.id); if (el) { el.value = keep.v; el.focus(); try { el.setSelectionRange(keep.s, keep.s); } catch (e) { } } }
@@ -241,6 +255,7 @@
       '<tr><th>회수 장소</th><td></td><th>필수 반납 품목</th><td>노트북 · 어댑터 · 케이블</td></tr></table>' +
       '<table><thead><tr><th>반</th><th>대상 수량</th><th>노트북 회수</th><th>어댑터 회수</th><th>케이블 회수</th><th>3종 완전 회수</th><th>미회수</th></tr></thead><tbody>' + sumRows +
       '<tr class="tot"><td>합계</td><td>' + T.n + "</td><td>" + T.nb + "</td><td>" + T.ad + "</td><td>" + T.cb + "</td><td>" + T.done + "</td><td>" + (T.n - T.done) + "</td></tr></tbody></table>" +
+      '<p class="pm"><b>노트북 회수율 ' + (T.n ? Math.round(T.nb / T.n * 100) : 0) + '%</b> (' + T.nb + ' / ' + T.n + '대) · 3종 완전 회수율 ' + (T.n ? Math.round(T.done / T.n * 100) : 0) + '%</p>' +
       '<p class="pm">위 수량의 노트북(어댑터·케이블 포함)을 인계·인수하였음을 확인합니다.</p>' +
       '<table class="sign"><tr><th>학교 담당자</th><td>소속/직급:</td><td>성명:</td><td>(서명)</td></tr>' +
       '<tr><th>회수 업체 담당자</th><td>업체명:</td><td>성명:</td><td>(서명)</td></tr></table></section>';

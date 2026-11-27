@@ -8,7 +8,7 @@
 <title>고3 노트북 회수 체크</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans+KR:wght@400;500;600;700&family=IBM+Plex+Mono:wght@500;600&display=swap">
-<link rel="stylesheet" href="style.css?v=5">
+<link rel="stylesheet" href="style.css?v=6">
 </head>
 <body>
 <div class="wrap" id="app">
@@ -30,9 +30,18 @@
   <div class="status" id="status" role="status">명단을 불러오는 중입니다…</div>
 
   <section class="panel" id="sumPanel" aria-label="전체 현황" hidden>
+    <div class="nbhead">
+      <div class="nbmain">
+        <span class="nblabel">노트북 반납률</span>
+        <strong id="nbRate">-</strong>
+        <span class="nbcount" id="nbCount"></span>
+      </div>
+      <div class="nbtrack"><i id="nbBar"></i></div>
+      <div class="nbsub">3종(노트북·어댑터·케이블) 완전 반납률 <b id="doneRate">-</b></div>
+    </div>
     <div class="sumwrap">
       <table class="sum">
-        <thead><tr><th>반</th><th>대상</th><th>완전 반납</th><th>일부 반납</th><th>미반납</th><th>반납률</th></tr></thead>
+        <thead><tr><th>반</th><th>대상</th><th class="nbc">노트북 반납</th><th class="nbc">노트북 반납률</th><th>3종 완전</th><th>3종 반납률</th></tr></thead>
         <tbody id="sumBody"></tbody>
       </table>
     </div>
@@ -50,7 +59,8 @@
       <div><h2 id="clsTitle">3학년 1반</h2><div class="meta" id="clsMeta"></div></div>
       <div class="filters" id="filters">
         <button type="button" data-f="all" aria-pressed="true">전체</button>
-        <button type="button" data-f="pending" aria-pressed="false">미반납</button>
+        <button type="button" data-f="nbmiss" aria-pressed="false">노트북 미반납</button>
+        <button type="button" data-f="pending" aria-pressed="false">3종 미완료</button>
         <button type="button" data-f="done" aria-pressed="false">완전 반납</button>
       </div>
       <div class="actions">
@@ -71,7 +81,7 @@
   </section>
 </div>
 <div id="print" aria-hidden="true"></div>
-<script src="config.js?v=5"></script>
-<script src="app.js?v=5"></script>
+<script src="config.js?v=6"></script>
+<script src="app.js?v=6"></script>
 </body>
 </html>
