@@ -126,7 +126,9 @@ button:focus-visible,select:focus-visible,input:focus-visible{outline:2px solid 
   .tabs::-webkit-scrollbar{display:none}
   body::before{content:"";position:fixed;inset:0 0 auto;height:env(safe-area-inset-top,0px);z-index:10;background:var(--bg)}
   .tabs{top:env(safe-area-inset-top,0px)}
-  .sum th,.sum td{padding:7px 6px;font-size:.8125rem}
+  .sum th,.sum td{padding:7px 5px;font-size:.8125rem}
+  .sum th{white-space:normal;word-break:keep-all;line-height:1.25;font-size:.75rem}
+  .nbmain strong{font-size:1.75rem}
   .bar{display:none}
   .toolbar{padding:12px}
   .toolbar > *{width:100%}
